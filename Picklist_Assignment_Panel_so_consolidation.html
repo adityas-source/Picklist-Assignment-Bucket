@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picklist Assignment Panel – v3.2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --dhq-primary: #730fc3;
+            --dhq-primary-hover: #5d0b9e;
+            --dhq-bg: #f0f5f5;
+            --dhq-table-even: #ffffff;
+            --dhq-table-odd: #f1f4f7;
+            --dhq-text-dark: #000000;
+            --dhq-text-muted: #aaaaaa;
+            --dhq-border: #cbd5de;
+            --dhq-error: #ef4444;
+            --dhq-success: #22c55e;
+        }
+        body { background-color: var(--dhq-bg); font-family: 'Roboto', sans-serif; color: var(--dhq-text-dark); }
+
+        /* ── TABLE ── */
+        .dhq-table th {
+            background-color: var(--dhq-primary); color: #fff; font-weight: bold;
+            font-size: 0.875rem; padding: 10px 12px; text-align: left;
+            border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap; cursor: pointer;
+            user-select: none;
+        }
+        .dhq-table th:hover { background-color: var(--dhq-primary-hover); }
+        .dhq-table th .sort-icon { margin-left: 5px; opacity: 0.6; font-size: 0.7rem; }
+        .dhq-table th.sort-active .sort-icon { opacity: 1; color: #fde68a; }
+        .dhq-table td {
+            font-size: 0.875rem; padding: 10px 12px;
+            border-bottom: 1px solid var(--dhq-border); border-right: 1px solid var(--dhq-border);
+            white-space: nowrap;
+        }
+        /* Default alternating rows — overridden by age-row classes */
+        .dhq-table tr:nth-child(even) td { background-color: var(--dhq-table-even); }
+        .dhq-table tr:nth-child(odd)  td { background-color: var(--dhq-table-odd); }
+        .dhq-table tr:hover td { filter: brightness(0.96); }
+
+        /* ── ROW AGE COLOUR CODING ── */
+        .row-age-green td  { background-color: #f0fdf4 !important; border-left: 3px solid #22c55e; }
+        .row-age-amber td  { background-color: #fffbeb !important; border-left: 3px solid #f59e0b; }
+        .row-age-red   td  { background-color: #fff1f2 !important; border-left: 3px solid #ef4444; }
+        .dhq-table tr.row-age-green:hover td { background-color: #dcfce7 !important; }
+        .dhq-table tr.row-age-amber:hover td { background-color: #fef3c7 !important; }
+        .dhq-table tr.row-age-red:hover   td { background-color: #ffe4e6 !important; }
+
+        /* ── BUTTONS ── */
+        .btn-primary   { background-color: var(--dhq-primary); color: white; transition: all 0.2s; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--dhq-primary-hover); }
+        .btn-primary:disabled { background-color: var(--dhq-border); cursor: not-allowed; color: var(--dhq-text-muted); }
+        .btn-secondary { background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; transition: all 0.2s; }
+        .btn-secondary:hover { background-color: #e5e7eb; }
+        .btn-outline-purple { background: white; color: var(--dhq-primary); border: 1.5px solid var(--dhq-primary); transition: all 0.2s; font-weight: 600; }
+        .btn-outline-purple:hover { background: #faf5ff; }
+
+        /* ── BADGES ── */
+        .badge-gwp        { background:#fff3e0; color:#c2410c; border:1px solid #fed7aa; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+        .badge-tester     { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+        .badge-select     { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; }
+        .badge-nonselect  { background:#f9fafb; color:#4b5563; border:1px solid #e5e7eb; font-size:0.72rem; font-weight:600; padding:2px 7px; border-radius:4px; }
+        .new-tag          { background:#dcfce7; color:#166534; font-size:0.55rem; font-weight:700; padding:1px 4px; border-radius:3px; text-transform:uppercase; letter-spacing:0.04em; margin-left:4px; vertical-align:middle; }
+        .bucket-pill      { background:#f3e8ff; color:#6b21a8; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:999px; font-family:monospace; white-space:nowrap; display:inline-block; }
+        .age-green        { background:#dcfce7; color:#166534; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+        .age-amber        { background:#fef9c3; color:#854d0e; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+        .age-red          { background:#fee2e2; color:#991b1b; font-size:0.72rem; font-weight:700; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+        .bucket-status-open       { background:#dbeafe; color:#1d4ed8; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .bucket-status-frozen     { background:#fef3c7; color:#92400e; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .bucket-status-rfc        { background:#ede9fe; color:#6d28d9; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+        .bucket-status-dispatched { background:#dcfce7; color:#166534; font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:4px; }
+
+        /* ── MULTI-SELECT DROPDOWN ── */
+        .ms-wrapper { position:relative; }
+        .ms-trigger { border:1px solid var(--dhq-border); border-radius:4px; height:36px; padding:0 10px; font-size:0.82rem; display:flex; align-items:center; cursor:pointer; background:white; user-select:none; gap:6px; }
+        .ms-trigger:hover { border-color: var(--dhq-primary); }
+        .ms-panel { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--dhq-border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.1); z-index:200; display:none; max-height:210px; overflow:hidden; flex-direction:column; }
+        .ms-panel.open { display:flex; }
+        .ms-search { padding:8px 10px; border-bottom:1px solid var(--dhq-border); }
+        .ms-search input { width:100%; border:1px solid var(--dhq-border); border-radius:4px; padding:4px 8px; font-size:0.8rem; outline:none; }
+        .ms-options { overflow-y:auto; flex:1; }
+        .ms-opt { display:flex; align-items:center; padding:7px 10px; font-size:0.8rem; cursor:pointer; gap:8px; }
+        .ms-opt:hover { background:#f3f0ff; }
+        .ms-opt.selected { background:#ede9fc; color:var(--dhq-primary); }
+        .ms-opt input[type=checkbox] { width:14px; height:14px; accent-color:var(--dhq-primary); flex-shrink:0; }
+
+        /* ── SIDE DRAWER ── */
+        .drawer-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:299; display:none; }
+        .drawer-overlay.open { display:block; }
+        .side-drawer { position:fixed; top:0; right:-480px; height:100%; width:480px; background:white; box-shadow:-4px 0 24px rgba(0,0,0,0.15); transition:right 0.3s ease; z-index:300; overflow-y:auto; }
+        .side-drawer.open { right:0; }
+        .drawer-field { display:flex; flex-direction:column; padding:9px 0; border-bottom:1px solid #f3f4f6; }
+        .drawer-label { font-size:0.63rem; text-transform:uppercase; letter-spacing:0.06em; color:#9ca3af; margin-bottom:3px; }
+        .drawer-value { font-size:0.875rem; color:#111827; font-weight:500; }
+
+        /* ── MODAL ── */
+        .modal-overlay { background-color:rgba(0,0,0,0.5); backdrop-filter:blur(2px); }
+
+        /* ── ASSIGN MODAL BUCKET SIBLING LIST ── */
+        .sibling-pl-row { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; border-radius:6px; border:1px solid #e5e7eb; background:#fafafa; margin-bottom:5px; font-size:0.8rem; }
+        .sibling-pl-row.is-current { border-color: var(--dhq-primary); background:#faf5ff; }
+
+        /* ── TOAST ── */
+        #toast-container { position:fixed; top:20px; right:20px; z-index:9999; display:flex; flex-direction:column; gap:10px; }
+        .toast { min-width:300px; max-width:390px; padding:14px 16px; border-radius:8px; color:white; box-shadow:0 4px 8px rgba(0,0,0,0.12); animation:slideIn 0.3s ease-out forwards; display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+        .toast.success { background-color:var(--dhq-success); }
+        .toast.error   { background-color:var(--dhq-error); }
+        .toast.warning { background-color:#f59e0b; }
+        @keyframes slideIn { from { transform:translateX(110%); opacity:0; } to { transform:translateX(0); opacity:1; } }
+        .loader { border:3px solid #f3f3f3; border-top:3px solid var(--dhq-primary); border-radius:50%; width:18px; height:18px; animation:spin 1s linear infinite; display:inline-block; }
+        @keyframes spin { 0% { transform:rotate(0deg); } 100% { transform:rotate(360deg); } }
+
+        /* ── TABS ── */
+        .tab-nav { display:flex; border-bottom:2px solid var(--dhq-border); background:#f9fafb; flex-shrink:0; }
+        .tab-btn { padding:11px 22px; font-size:0.875rem; font-weight:600; cursor:pointer; border:none; background:transparent; color:#6b7280; border-bottom:3px solid transparent; margin-bottom:-2px; transition:all 0.2s; display:flex; align-items:center; gap:7px; white-space:nowrap; }
+        .tab-btn:hover:not(.active) { color:var(--dhq-primary); background:#f5f0ff; }
+        .tab-btn.active { color:var(--dhq-primary); border-bottom-color:var(--dhq-primary); background:#faf5ff; }
+
+        /* ── BUCKET DASHBOARD ── */
+        .bucket-card { background:white; border:1px solid var(--dhq-border); border-radius:10px; overflow:hidden; transition:box-shadow 0.2s, transform 0.15s; }
+        .bucket-card:hover { box-shadow:0 6px 18px rgba(115,15,195,0.12); transform:translateY(-1px); }
+        .bucket-card-header { padding:12px 14px; border-bottom:1px solid var(--dhq-border); background:linear-gradient(135deg,#faf5ff 0%,#f3e8ff 100%); display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .bucket-card-body { padding:12px 14px; }
+        .progress-bar-outer { background:#e5e7eb; border-radius:999px; height:8px; overflow:hidden; margin:5px 0 3px; }
+        .progress-bar-fill  { height:100%; background:var(--dhq-primary); border-radius:999px; transition:width 0.5s ease; }
+
+        /* ── SUMMARY CHIPS ── */
+        .summary-chip { background:white; border:1px solid var(--dhq-border); border-radius:10px; padding:12px 16px; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.05); cursor:pointer; transition:all 0.2s; }
+        .summary-chip:hover, .summary-chip.active-filter { box-shadow:0 4px 12px rgba(115,15,195,0.15); border-color:var(--dhq-primary); }
+        .summary-chip.active-filter .summary-chip-val { text-decoration: underline; }
+        .summary-chip-val   { font-size:1.6rem; font-weight:900; display:block; line-height:1; }
+        .summary-chip-label { font-size:0.68rem; color:#6b7280; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; display:block; }
+
+        /* ── OBD / PL ITEM ROWS in cards ── */
+        .obd-block { border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; margin-bottom:8px; }
+        .obd-block-header { background:#f5f3ff; padding:6px 10px; font-size:0.75rem; font-weight:700; color:#6d28d9; display:flex; align-items:center; gap:6px; border-bottom:1px solid #e5e7eb; }
+        .pl-row { padding:5px 10px; border-bottom:1px solid #f3f4f6; font-size:0.78rem; display:flex; align-items:center; justify-content:space-between; gap:6px; }
+        .pl-row:last-child { border-bottom:none; }
+
+        /* ── COLLAPSIBLE ── */
+        .obd-collapse-btn { display:flex; align-items:center; gap:7px; font-size:0.77rem; font-weight:700; color:var(--dhq-primary); cursor:pointer; padding:7px 0 3px; user-select:none; border-top:1px dashed #e5e7eb; margin-top:8px; }
+        .obd-collapse-btn .chevron { transition:transform 0.2s; display:inline-block; font-size:0.65rem; }
+        .obd-collapse-btn.open .chevron { transform:rotate(180deg); }
+        .obd-list-body { display:none; margin-top:6px; }
+        .obd-list-body.open { display:block; }
+
+        /* ── INFO BANNER ── */
+        .info-banner { background:#eef2ff; border:1px solid #c7d2fe; border-radius:8px; padding:9px 14px; font-size:0.81rem; color:#3730a3; font-weight:500; display:flex; align-items:center; gap:10px; }
+
+        /* ── SORT TOGGLE ── */
+        .sort-toggle-btn { border:1px solid var(--dhq-border); border-radius:4px; height:36px; padding:0 10px; font-size:0.8rem; background:white; cursor:pointer; display:flex; align-items:center; gap:5px; color:#374151; font-weight:600; transition:all 0.2s; white-space:nowrap; }
+        .sort-toggle-btn:hover { border-color:var(--dhq-primary); color:var(--dhq-primary); }
+        .sort-toggle-btn.active { border-color:var(--dhq-primary); background:#f5f0ff; color:var(--dhq-primary); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col p-4 relative" onload="initApp()">
+
+<div id="toast-container"></div>
+
+<!-- Debug Role Toggle -->
+<div class="absolute top-2 right-2 bg-white p-2 rounded shadow flex items-center gap-2 border border-gray-300 text-xs z-50">
+    <span class="font-bold text-gray-700">Debug Role:</span>
+    <label class="flex items-center cursor-pointer">
+        <input type="checkbox" id="debug_supervisor_toggle" class="mr-2" onchange="toggleSupervisor(this.checked)">
+        <span id="debug_role_label">is_supervisor = false</span>
+    </label>
+</div>
+
+<!-- ═══════════════════════════ MAIN PANEL ════════════════════════════ -->
+<div id="screen_2" class="w-full max-w-screen-2xl mx-auto bg-white shadow-md rounded border border-[var(--dhq-border)] flex flex-col overflow-hidden" style="min-height:85vh;">
+
+    <!-- Breadcrumb -->
+    <div class="px-6 py-3 border-b border-[var(--dhq-border)] bg-gray-50 flex-shrink-0">
+        <span class="text-lg font-bold text-gray-800"><i class="fas fa-list-ul mr-2 text-purple-700"></i>DC Picklist</span>
+    </div>
+
+    <!-- TAB NAV -->
+    <div class="tab-nav flex-shrink-0">
+        <button class="tab-btn active" id="tab_btn_picklist" onclick="switchTab('picklist')">
+            <i class="fas fa-clipboard-list"></i> Picklist Assignment
+        </button>
+        <button class="tab-btn" id="tab_btn_bucket" onclick="switchTab('bucket')">
+            <i class="fas fa-layer-group"></i> Bucket Dashboard
+            <span class="new-tag">New</span>
+        </button>
+    </div>
+
+    <!-- ══════════════ TAB 1: PICKLIST ASSIGNMENT ═══════════════════════ -->
+    <div id="tab_picklist" class="flex flex-col flex-1 overflow-hidden">
+
+        <!-- Filters -->
+        <div class="px-4 pt-4 pb-3 bg-white border-b border-[var(--dhq-border)] flex-shrink-0">
+
+            <!-- Row 1: Filter dropdowns -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 items-end mb-3">
+
+                <!-- Bucket ID -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Bucket ID <span class="new-tag">New</span></label>
+                    <select id="ctrl_bucket_id" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Buckets</option>
+                    </select>
+                </div>
+
+                <!-- Channel -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Channel</label>
+                    <select id="ctrl_channel" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Channels</option>
+                    </select>
+                </div>
+
+                <!-- Assigned To -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Assigned To</label>
+                    <select id="ctrl_assignedto" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Assignees</option>
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Status</label>
+                    <select id="ctrl_status" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Statuses</option>
+                    </select>
+                </div>
+
+                <!-- Portfolio -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Portfolio <span class="new-tag">New</span></label>
+                    <select id="ctrl_portfolio" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Portfolios</option>
+                        <option value="SELECT">Select</option>
+                        <option value="NON_SELECT">Non-Select</option>
+                    </select>
+                </div>
+
+                <!-- F-Name Multi-Select -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Customer F-Name <span class="new-tag">New</span></label>
+                    <div class="ms-wrapper" id="ms_wrapper">
+                        <div class="ms-trigger" id="ms_trigger" onclick="toggleMS()">
+                            <i class="fas fa-search text-gray-400 text-xs flex-shrink-0"></i>
+                            <span id="ms_label" class="text-gray-400 truncate flex-1 text-sm">All F-Names</span>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs flex-shrink-0"></i>
+                        </div>
+                        <div class="ms-panel" id="ms_panel">
+                            <div class="ms-search">
+                                <input type="text" id="ms_search_input" placeholder="Search F-Name…" oninput="renderMSOptions(this.value)">
+                            </div>
+                            <div class="ms-options" id="ms_options"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Sort controls + Search + Filter button -->
+            <div class="flex flex-wrap gap-3 items-end">
+
+                <!-- Sort controls -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Sort By</label>
+                    <div class="flex gap-2">
+                        <button id="sort_btn_bucket_age" class="sort-toggle-btn active" onclick="setSort('bucket_age')">
+                            <i class="fas fa-layer-group text-xs"></i> Bucket Age
+                            <span id="sort_icon_bucket_age" class="text-xs">↓</span>
+                        </button>
+                        <button id="sort_btn_pl_age" class="sort-toggle-btn" onclick="setSort('pl_age')">
+                            <i class="fas fa-clock text-xs"></i> PL Age
+                            <span id="sort_icon_pl_age" class="text-xs">↓</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search -->
+                <div class="flex flex-col flex-1 min-w-48">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Search <span class="new-tag">+Bucket ID</span></label>
+                    <input type="text" id="ctrl_search_id"
+                           placeholder="Picklist ID / Order ID / OBD ID / Bucket ID"
+                           onkeypress="handleSearchEnter(event)"
+                           class="border border-[var(--dhq-border)] rounded h-9 px-3 text-sm focus:outline-none focus:border-purple-600 w-full">
+                </div>
+
+                <!-- Filter button -->
+                <div class="flex flex-col justify-end">
+                    <button id="btn_filter" onclick="executeFilterWorkflow()"
+                            class="btn-primary rounded h-9 px-5 font-bold text-sm flex items-center gap-2">
+                        <i class="fas fa-filter text-xs"></i> Filter
+                        <span id="loader_filter" class="loader hidden"></span>
+                    </button>
+                </div>
+
+                <!-- Reset button -->
+                <div class="flex flex-col justify-end">
+                    <button onclick="resetFilters()"
+                            class="btn-secondary rounded h-9 px-4 text-sm flex items-center gap-2">
+                        <i class="fas fa-times text-xs"></i> Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info Banner -->
+            <div id="bucket_info_banner" class="hidden mt-3"></div>
+        </div>
+
+        <!-- Table -->
+        <div class="flex-1 overflow-auto bg-gray-50 relative">
+            <table class="w-full dhq-table border-collapse" id="ctrl_table">
+                <thead>
+                    <tr>
+                        <th onclick="setSort('pl_age')" title="Sort by Picklist Age">
+                            PickList ID <span class="sort-icon fas fa-sort"></span>
+                        </th>
+                        <th>Order ID</th>
+                        <th>OBD ID</th>
+                        <th onclick="setSort('pl_age')" title="Sort by Picklist Age">
+                            PL Age <span class="new-tag">New</span>
+                            <span class="sort-icon fas fa-sort"></span>
+                        </th>
+                        <th>Order Type</th>
+                        <th>Channel</th>
+                        <th>Customer</th>
+                        <th>F-Name <span class="new-tag">New</span></th>
+                        <th>Portfolio <span class="new-tag">New</span></th>
+                        <th>Item Qty</th>
+                        <th>Create Time</th>
+                        <th>Status</th>
+                        <th class="text-center">Assign</th>
+                        <th>Assigned On</th>
+                        <th>Sub Type</th>
+                        <th>Assignee</th>
+                        <th class="text-center">Details</th>
+                    </tr>
+                </thead>
+                <tbody id="table_body"></tbody>
+            </table>
+            <div id="table_empty_state" class="hidden p-10 flex flex-col items-center justify-center text-gray-500 w-full">
+                <i class="fas fa-folder-open text-4xl mb-2 text-gray-300"></i>
+                <p class="font-semibold">No Picklist Data Found!</p>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div id="table_footer" class="p-3 border-t border-[var(--dhq-border)] bg-white flex justify-between items-center text-sm text-gray-600 flex-shrink-0" style="visibility:hidden;"></div>
+    </div>
+
+    <!-- ══════════════ TAB 2: BUCKET DASHBOARD ══════════════════════════ -->
+    <div id="tab_bucket" class="hidden flex flex-col flex-1 overflow-hidden">
+
+        <!-- Bucket Filters Bar -->
+        <div class="px-4 pt-4 pb-3 bg-white border-b border-[var(--dhq-border)] flex-shrink-0">
+            <div class="flex flex-wrap gap-3 items-end">
+
+                <!-- Date From -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Date From</label>
+                    <input type="date" id="bkt_date_from"
+                           class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                </div>
+
+                <!-- Date To -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Date To</label>
+                    <input type="date" id="bkt_date_to"
+                           class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                </div>
+
+                <!-- Status Filter -->
+                <div class="flex flex-col">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Bucket Status</label>
+                    <select id="bkt_status_filter" class="border border-[var(--dhq-border)] rounded h-9 px-2 text-sm focus:outline-none focus:border-purple-600">
+                        <option value="">All Statuses</option>
+                        <option value="OPEN">OPEN</option>
+                        <option value="FROZEN">FROZEN</option>
+                        <option value="RFC">RFC</option>
+                        <option value="DISPATCHED">DISPATCHED</option>
+                    </select>
+                </div>
+
+                <!-- Search -->
+                <div class="flex flex-col flex-1 min-w-56">
+                    <label class="text-xs font-bold text-gray-700 mb-1">Search</label>
+                    <input type="text" id="bkt_search"
+                           placeholder="SO Number / OBD ID / Picklist ID"
+                           class="border border-[var(--dhq-border)] rounded h-9 px-3 text-sm focus:outline-none focus:border-purple-600 w-full"
+                           oninput="applyBucketFilters()">
+                </div>
+
+                <!-- Apply -->
+                <div class="flex gap-2">
+                    <button onclick="applyBucketFilters()"
+                            class="btn-primary rounded h-9 px-5 font-bold text-sm flex items-center gap-2">
+                        <i class="fas fa-filter text-xs"></i> Apply
+                    </button>
+                    <button onclick="resetBucketFilters()"
+                            class="btn-secondary rounded h-9 px-4 text-sm flex items-center gap-2">
+                        <i class="fas fa-times text-xs"></i> Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scrollable content area -->
+        <div class="flex-1 overflow-auto bg-gray-50 p-5">
+            <!-- Summary Chips -->
+            <div id="bucket_summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5"></div>
+            <!-- Bucket Cards -->
+            <div id="bucket_cards" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            <!-- Empty state -->
+            <div id="bucket_empty" class="hidden flex flex-col items-center justify-center py-16 text-gray-400">
+                <i class="fas fa-box-open text-5xl mb-3 text-gray-300"></i>
+                <p class="font-semibold text-lg">No buckets match your filters</p>
+            </div>
+        </div>
+    </div>
+
+</div><!-- end main panel -->
+
+
+<!-- ═══════════════════════ ASSIGN MODAL ════════════════════════════════ -->
+<div id="modal_overlay" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col border border-[var(--dhq-border)]" style="max-height:90vh;">
+
+        <!-- Header -->
+        <div class="p-4 border-b border-[var(--dhq-border)] flex justify-between items-start bg-gray-50 flex-shrink-0">
+            <div>
+                <h4 class="font-extrabold text-lg text-gray-800">Add or Edit Picker</h4>
+                <p id="modal_bucket_context" class="text-xs text-purple-600 mt-0.5 font-medium"></p>
+            </div>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-xl font-bold transition-colors mt-0.5"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="p-5 flex flex-col gap-4 overflow-y-auto flex-1">
+
+            <!-- Picker select -->
+            <div class="flex flex-col">
+                <label class="text-sm font-bold text-gray-700 mb-1">Assigned to picker <span class="text-red-500">*</span></label>
+                <select id="ctrl_modal_picker" class="border border-[var(--dhq-border)] rounded h-10 px-2 text-sm focus:outline-none focus:border-purple-600">
+                    <option value="">Click to Select Assignee</option>
+                </select>
+            </div>
+
+            <!-- Bucket context: filter + picklist list -->
+            <div id="modal_bucket_section" class="hidden">
+                <div class="border border-[var(--dhq-border)] rounded-lg overflow-hidden">
+                    <!-- Bucket filter header -->
+                    <div class="bg-purple-50 border-b border-[var(--dhq-border)] px-3 py-2 flex items-center gap-3">
+                        <i class="fas fa-layer-group text-purple-400 text-sm flex-shrink-0"></i>
+                        <div class="flex flex-col flex-1">
+                            <label class="text-xs font-bold text-gray-600 mb-0.5">Filter Bucket</label>
+                            <select id="modal_bucket_filter_select"
+                                    class="border border-[var(--dhq-border)] rounded h-8 px-2 text-sm focus:outline-none focus:border-purple-600 bg-white"
+                                    onchange="onModalBucketChange(this.value)">
+                            </select>
+                        </div>
+                        <button onclick="applyBucketFilterFromModal()"
+                                class="btn-outline-purple rounded text-xs px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+                            <i class="fas fa-filter text-xs"></i> Filter Table
+                        </button>
+                    </div>
+                    <!-- Picklist rows for selected bucket -->
+                    <div class="p-2">
+                        <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">
+                            Picklists in this Bucket
+                        </p>
+                        <div id="modal_sibling_list" class="flex flex-col gap-1 max-h-52 overflow-y-auto pr-1"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Version hash debug -->
+            <p id="modal_version_display" class="text-xs text-gray-400 font-mono"></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-[var(--dhq-border)] bg-gray-50 flex justify-between items-center gap-3 flex-shrink-0">
+            <button onclick="simulateConcurrentLock()"
+                    class="btn-secondary rounded h-9 px-3 text-xs font-semibold flex items-center gap-2"
+                    title="Demo: simulates another user assigning this picklist concurrently">
+                <i class="fas fa-lock text-amber-500"></i> Simulate Concurrent Lock
+            </button>
+            <button id="btn_modal_update" onclick="executeAssignWorkflow()"
+                    class="btn-primary rounded h-10 px-6 font-bold text-sm">
+                Update
+            </button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════ SIDE DRAWER ═════════════════════════════════ -->
+<div class="drawer-overlay" id="drawer_overlay" onclick="closeDrawer()"></div>
+<div class="side-drawer" id="side_drawer">
+    <div class="sticky top-0 bg-white border-b border-[var(--dhq-border)] px-5 py-4 flex justify-between items-center z-10">
+        <div>
+            <p class="font-bold text-gray-800 text-base">Picklist Details</p>
+            <p class="text-xs text-gray-400 mt-0.5">All fields for selected picklist</p>
+        </div>
+        <button onclick="closeDrawer()" class="text-gray-400 hover:text-red-500 text-xl font-bold transition-colors"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="drawer_body" class="px-5 py-4"></div>
+</div>
+
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// REFERENCE TIME
+// ─────────────────────────────────────────────────────────────────────────────
+const NOW_TS = Math.floor(Date.now() / 1000);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────────────────────
+const State = {
+    get_temp_picklist: [],
+    get_picklists:     [],
+    get_pickers:       [],
+    is_supervisor:     "false",
+    active_tab:        "picklist",
+
+    // Picklist tab filters
+    ctrl_bucket_id:      "",
+    ctrl_channel:        "",
+    ctrl_assignedto:     "",
+    ctrl_status:         "",
+    ctrl_portfolio:      "",
+    ctrl_fname_selected: [],
+    ctrl_search_id:      "",
+
+    // Sort: 'bucket_age' | 'pl_age'
+    sort_by:   "bucket_age",
+    sort_asc:  false,  // descending = oldest first
+
+    // Pagination
+    current_page:       1,
+    page_limit:         15,
+    page_size_options:  [10, 15, 25, 50],
+    get_distinct_data:  { distinct_channels: [], distinct_status: [] },
+
+    // Modal
+    ctrl_modal_picker:       "",
+    ctrl_modal_picklist_id:  "",
+    ctrl_modal_version_hash: null,
+    modal_bucket_id:         "",
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MOCK DATA
+// ─────────────────────────────────────────────────────────────────────────────
+const MOCK_API = {
+    isSupervisor: false,
+
+    picklists: [
+        {
+            pickListID: 2347570, orderID: "SO-88001", obdId: 201202784,
+            bucketId: "BCK-001",
+            orderType: "Sales Order", channel: "GT", customer: "Sharma Enterprises",
+            customer_f_name: "Sharma Group", customer_portfolio: "SELECT",
+            order_identification: "GWP_WITH_STICKER",
+            itemQty: 20, createTime: NOW_TS - 18*3600,
+            status: "READY", assignedTo: null, assignedOn: null,
+            subtype: "Regular", zoneIds: ["1"], versionHash: 1
+        },
+        {
+            pickListID: 2347571, orderID: "SO-88002", obdId: 201202785,
+            bucketId: "BCK-001",
+            orderType: "Sales Order", channel: "GT", customer: "Kapoor Stores",
+            customer_f_name: "Kapoor Group", customer_portfolio: "NON_SELECT",
+            order_identification: "REGULAR",
+            itemQty: 12, createTime: NOW_TS - 17*3600,
+            status: "ASSIGNED",
+            assignedTo: { userId: 101, userName: "Ramesh Kumar", email: "ramesh@dc.com" },
+            assignedOn: NOW_TS - 16*3600,
+            subtype: "Regular", zoneIds: ["1","2"], versionHash: 2
+        },
+        {
+            pickListID: 2347575, orderID: "SO-88006", obdId: 201202789,
+            bucketId: "BCK-001",
+            orderType: "Sales Order", channel: "GT", customer: "Rao Distributors",
+            customer_f_name: "Rao Corp", customer_portfolio: "SELECT",
+            order_identification: "TESTER_WITHOUT_STICKER",
+            itemQty: 4, createTime: NOW_TS - 16*3600,
+            status: "READY", assignedTo: null, assignedOn: null,
+            subtype: "Regular", zoneIds: ["2"], versionHash: 1
+        },
+        {
+            pickListID: 2347573, orderID: "SO-88004", obdId: 201202787,
+            bucketId: "BCK-002",
+            orderType: "Sales Order", channel: "MT", customer: "BigMart Delhi",
+            customer_f_name: null, customer_portfolio: null,
+            order_identification: "REGULAR",
+            itemQty: 30, createTime: NOW_TS - 27*3600,
+            status: "PICKING",
+            assignedTo: { userId: 102, userName: "Suresh Mehta", email: "suresh@dc.com" },
+            assignedOn: NOW_TS - 26*3600,
+            subtype: "Regular", zoneIds: ["3"], versionHash: 1
+        },
+        {
+            pickListID: 2347572, orderID: "SO-88003", obdId: 201202786,
+            bucketId: "BCK-003",
+            orderType: "Sales Order", channel: "GT", customer: "Mehta Retail",
+            customer_f_name: "Mehta Corp", customer_portfolio: "NON_SELECT",
+            order_identification: "TESTER_WITH_STICKER",
+            itemQty: 5, createTime: NOW_TS - 5*3600,
+            status: "READY", assignedTo: null, assignedOn: null,
+            subtype: "Regular", zoneIds: ["2"], versionHash: 1
+        },
+        {
+            pickListID: 2347574, orderID: "SO-88005", obdId: 201202788,
+            bucketId: "BCK-003",
+            orderType: "Sales Order", channel: "GT", customer: "Patel Traders",
+            customer_f_name: "Sharma Group", customer_portfolio: "SELECT",
+            order_identification: "GWP_WITHOUT_STICKER",
+            itemQty: 8, createTime: NOW_TS - 4*3600,
+            status: "READY", assignedTo: null, assignedOn: null,
+            subtype: "Forward", zoneIds: ["1"], versionHash: 1
+        },
+        {
+            pickListID: 2347576, orderID: "SO-88007", obdId: 201202790,
+            bucketId: "BCK-004",
+            orderType: "STO", channel: "STO", customer: "DC-Mumbai",
+            customer_f_name: null, customer_portfolio: null,
+            order_identification: "REGULAR",
+            itemQty: 50, createTime: NOW_TS - 50*3600,
+            status: "COMPLETED",
+            assignedTo: { userId: 103, userName: "Aarav Patel", email: "aarav@dc.com" },
+            assignedOn: NOW_TS - 48*3600,
+            subtype: "Regular", zoneIds: ["1","2","3"], versionHash: 3
+        }
+    ],
+
+    // soNumber added to each OBD so dashboard can show it
+    buckets: [
+        {
+            bucketId: "BCK-001",
+            status: "FROZEN",
+            channel: "GT",
+            customer: "Sharma / Kapoor / Rao",
+            bucketCreationTime: NOW_TS - 19*3600,
+            obds: [
+                { obdId: 201202784, soNumber: "SO-88001", oldestObdCreationTime: NOW_TS - 18*3600, pickListIDs: [2347570] },
+                { obdId: 201202785, soNumber: "SO-88002", oldestObdCreationTime: NOW_TS - 17*3600, pickListIDs: [2347571] },
+                { obdId: 201202789, soNumber: "SO-88006", oldestObdCreationTime: NOW_TS - 16*3600, pickListIDs: [2347575] }
+            ]
+        },
+        {
+            bucketId: "BCK-002",
+            status: "RFC",
+            channel: "MT",
+            customer: "BigMart Delhi",
+            bucketCreationTime: NOW_TS - 28*3600,
+            obds: [
+                { obdId: 201202787, soNumber: "SO-88004", oldestObdCreationTime: NOW_TS - 27*3600, pickListIDs: [2347573] }
+            ]
+        },
+        {
+            bucketId: "BCK-003",
+            status: "OPEN",
+            channel: "GT",
+            customer: "Mehta Retail / Patel Traders",
+            bucketCreationTime: NOW_TS - 6*3600,
+            obds: [
+                { obdId: 201202786, soNumber: "SO-88003", oldestObdCreationTime: NOW_TS - 5*3600, pickListIDs: [2347572] },
+                { obdId: 201202788, soNumber: "SO-88005", oldestObdCreationTime: NOW_TS - 4*3600, pickListIDs: [2347574] }
+            ]
+        },
+        {
+            bucketId: "BCK-004",
+            status: "DISPATCHED",
+            channel: "STO",
+            customer: "DC-Mumbai",
+            bucketCreationTime: NOW_TS - 52*3600,
+            obds: [
+                { obdId: 201202790, soNumber: "SO-88007", oldestObdCreationTime: NOW_TS - 50*3600, pickListIDs: [2347576] }
+            ]
+        }
+    ],
+
+    pickerInformation: [
+        { userId: 101, userName: "Ramesh Kumar",  email: "ramesh@dc.com" },
+        { userId: 102, userName: "Suresh Mehta",  email: "suresh@dc.com" },
+        { userId: 103, userName: "Aarav Patel",   email: "aarav@dc.com"  },
+        { userId: 104, userName: "Priya Rajan",   email: "priya@dc.com"  }
+    ]
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUCKET HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function getBucketById(bucketId) {
+    return MOCK_API.buckets.find(b => b.bucketId === bucketId) || null;
+}
+function getBucketOldestTs(bucketId) {
+    const b = getBucketById(bucketId);
+    if (!b || !b.obds.length) return NOW_TS;
+    return Math.min(...b.obds.map(o => o.oldestObdCreationTime));
+}
+function getBucketAgeSecs(bucketId) {
+    return NOW_TS - getBucketOldestTs(bucketId);
+}
+function getPLAgeSecs(row) {
+    return NOW_TS - (row.createTime || NOW_TS);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AGE FORMATTING
+// ─────────────────────────────────────────────────────────────────────────────
+function formatAge(secs) {
+    if (secs <= 0) return '< 1m';
+    const d = Math.floor(secs / 86400);
+    const h = Math.floor((secs % 86400) / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    if (d > 0) return `${d}d ${h}h`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+}
+// Bucket age colour thresholds: < 12h green, 12-24h amber, > 24h red
+function ageClass(secs) {
+    if (secs < 12*3600) return 'age-green';
+    if (secs < 24*3600) return 'age-amber';
+    return 'age-red';
+}
+function ageBadge(secs) {
+    return `<span class="${ageClass(secs)}">${formatAge(secs)}</span>`;
+}
+// Picklist row age thresholds: < 6h green, 6-24h amber, > 24h red
+function rowAgeClass(secs) {
+    if (secs < 6*3600)  return 'row-age-green';
+    if (secs < 24*3600) return 'row-age-amber';
+    return 'row-age-red';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BADGE HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function orderRemarksBadge(type) {
+    if (!type || type === 'REGULAR') return '<span class="text-gray-400 text-xs italic">Regular</span>';
+    if (type === 'GWP_WITH_STICKER')      return '<span class="badge-gwp">GWP – With Sticker</span>';
+    if (type === 'GWP_WITHOUT_STICKER')   return '<span class="badge-gwp">GWP – Without Sticker</span>';
+    if (type === 'TESTER_WITH_STICKER')   return '<span class="badge-tester">Tester – With Sticker</span>';
+    if (type === 'TESTER_WITHOUT_STICKER') return '<span class="badge-tester">Tester – Without Sticker</span>';
+    return type;
+}
+function portfolioBadge(p) {
+    if (p === 'SELECT')     return '<span class="badge-select">Select</span>';
+    if (p === 'NON_SELECT') return '<span class="badge-nonselect">Non-Select</span>';
+    return '<span class="text-gray-300 text-xs">—</span>';
+}
+function statusBadge(s) {
+    const map = {
+        READY:'bg-blue-100 text-blue-700', ASSIGNED:'bg-indigo-100 text-indigo-700',
+        PICKING:'bg-amber-100 text-amber-700', PICKED:'bg-amber-100 text-amber-700',
+        COMPLETED:'bg-green-100 text-green-700', HOLD:'bg-red-100 text-red-700',
+        CANCELLED:'bg-red-100 text-red-700'
+    };
+    return `<span class="px-2 py-0.5 rounded text-xs font-bold ${map[s]||'bg-gray-200 text-gray-700'}">${s||'-'}</span>`;
+}
+function bucketStatusBadge(status) {
+    const cls = { OPEN:'bucket-status-open', FROZEN:'bucket-status-frozen', RFC:'bucket-status-rfc', DISPATCHED:'bucket-status-dispatched' };
+    return `<span class="${cls[status]||'bucket-status-open'}">${status||'—'}</span>`;
+}
+function formatUnixTime(ts) {
+    if (ts == null) return '-';
+    const d = new Date(typeof ts === 'number' ? ts * 1000 : ts);
+    if (isNaN(d)) return '-';
+    return d.toLocaleString('en-IN', { timeZone:'Asia/Kolkata', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:false });
+}
+function getAssigneeId(row)   { return row.assignedTo ? (row.assignedTo.userId   ?? row.assignedTo_userId)   : null; }
+function getAssigneeName(row) { return row.assignedTo ? (row.assignedTo.userName ?? row.assignedTo_userName ?? '-') : '-'; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+    State.active_tab = tab;
+    document.getElementById('tab_picklist').classList.toggle('hidden', tab !== 'picklist');
+    document.getElementById('tab_bucket').classList.toggle('hidden',   tab !== 'bucket');
+    document.getElementById('tab_btn_picklist').classList.toggle('active', tab === 'picklist');
+    document.getElementById('tab_btn_bucket').classList.toggle('active',   tab === 'bucket');
+    if (tab === 'bucket') renderBucketDashboard();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────────────────────────────────────
+function initApp() {
+    State.get_temp_picklist = JSON.parse(JSON.stringify(MOCK_API.picklists));
+    State.get_picklists     = JSON.parse(JSON.stringify(MOCK_API.picklists));
+    State.get_pickers       = JSON.parse(JSON.stringify(MOCK_API.pickerInformation));
+    State.is_supervisor     = MOCK_API.isSupervisor ? "true" : "false";
+    computeDistinctData();
+    renderDropdowns();
+    renderMSOptions('');
+    applySortToList(State.get_picklists);
+    renderTable();
+    updateFooterVisibility();
+}
+
+function computeDistinctData() {
+    const ch = new Set(), st = new Set();
+    State.get_temp_picklist.forEach(p => { if (p.channel) ch.add(p.channel); if (p.status) st.add(p.status); });
+    State.get_distinct_data = { distinct_channels: [...ch], distinct_status: [...st] };
+}
+
+function renderDropdowns() {
+    const bi = document.getElementById('ctrl_bucket_id');
+    bi.innerHTML = '<option value="">All Buckets</option>';
+    const bids = [...new Set(State.get_temp_picklist.map(p => p.bucketId).filter(Boolean))].sort();
+    bids.forEach(id => bi.innerHTML += `<option value="${id}">${id}</option>`);
+
+    const ch = document.getElementById('ctrl_channel');
+    ch.innerHTML = '<option value="">All Channels</option>';
+    State.get_distinct_data.distinct_channels.forEach(c => ch.innerHTML += `<option value="${c}">${c}</option>`);
+
+    const as = document.getElementById('ctrl_assignedto');
+    as.innerHTML = '<option value="">All Assignees</option>';
+    State.get_pickers.forEach(p => as.innerHTML += `<option value="${p.userId}">${p.userName} (${p.email})</option>`);
+
+    const st = document.getElementById('ctrl_status');
+    st.innerHTML = '<option value="">All Statuses</option>';
+    State.get_distinct_data.distinct_status.forEach(s => st.innerHTML += `<option value="${s}">${s}</option>`);
+
+    const mp = document.getElementById('ctrl_modal_picker');
+    mp.innerHTML = '<option value="">Click to Select Assignee</option>';
+    State.get_pickers.forEach(p => mp.innerHTML += `<option value="${p.userId}">${p.userName} (${p.email})</option>`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SORT
+// ─────────────────────────────────────────────────────────────────────────────
+function setSort(by) {
+    if (State.sort_by === by) {
+        State.sort_asc = !State.sort_asc;
+    } else {
+        State.sort_by  = by;
+        State.sort_asc = false;
+    }
+    updateSortUI();
+    applySortToList(State.get_picklists);
+    renderTable();
+}
+
+function updateSortUI() {
+    const bucketBtn = document.getElementById('sort_btn_bucket_age');
+    const plBtn     = document.getElementById('sort_btn_pl_age');
+    const bucketIcon = document.getElementById('sort_icon_bucket_age');
+    const plIcon     = document.getElementById('sort_icon_pl_age');
+
+    [bucketBtn, plBtn].forEach(b => b.classList.remove('active'));
+    if (State.sort_by === 'bucket_age') {
+        bucketBtn.classList.add('active');
+        bucketIcon.textContent = State.sort_asc ? '↑' : '↓';
+        plIcon.textContent = '↓';
+    } else {
+        plBtn.classList.add('active');
+        plIcon.textContent = State.sort_asc ? '↑' : '↓';
+        bucketIcon.textContent = '↓';
+    }
+
+    // Table header highlight
+    document.querySelectorAll('.dhq-table th').forEach(th => th.classList.remove('sort-active'));
+}
+
+function applySortToList(list) {
+    list.sort((a, b) => {
+        let diff = 0;
+        if (State.sort_by === 'bucket_age') {
+            diff = getBucketAgeSecs(b.bucketId) - getBucketAgeSecs(a.bucketId);
+        } else {
+            diff = getPLAgeSecs(b) - getPLAgeSecs(a);
+        }
+        return State.sort_asc ? -diff : diff;
+    });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MULTI-SELECT F-NAME
+// ─────────────────────────────────────────────────────────────────────────────
+function getDistinctFNames() {
+    return [...new Set(State.get_temp_picklist.map(p => p.customer_f_name).filter(Boolean))].sort();
+}
+function toggleMS() {
+    const panel = document.getElementById('ms_panel');
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) { document.getElementById('ms_search_input').focus(); renderMSOptions(''); }
+}
+function renderMSOptions(q) {
+    const names = getDistinctFNames().filter(n => !q || n.toLowerCase().includes(q.toLowerCase()));
+    const el = document.getElementById('ms_options');
+    el.innerHTML = names.length
+        ? names.map(n => `<div class="ms-opt ${State.ctrl_fname_selected.includes(n)?'selected':''}" onclick="toggleFName('${n}')">
+            <input type="checkbox" ${State.ctrl_fname_selected.includes(n)?'checked':''} onclick="event.stopPropagation()">${n}
+          </div>`).join('')
+        : '<p class="text-xs text-gray-400 p-3">No results</p>';
+}
+function toggleFName(name) {
+    const i = State.ctrl_fname_selected.indexOf(name);
+    if (i > -1) State.ctrl_fname_selected.splice(i, 1); else State.ctrl_fname_selected.push(name);
+    renderMSOptions(document.getElementById('ms_search_input').value);
+    const lbl = document.getElementById('ms_label');
+    if (!State.ctrl_fname_selected.length) {
+        lbl.textContent = 'All F-Names'; lbl.classList.add('text-gray-400'); lbl.classList.remove('text-gray-800');
+    } else {
+        lbl.textContent = State.ctrl_fname_selected.join(', ');
+        lbl.classList.remove('text-gray-400'); lbl.classList.add('text-gray-800');
+    }
+}
+document.addEventListener('click', e => {
+    const w = document.getElementById('ms_wrapper');
+    if (w && !w.contains(e.target)) document.getElementById('ms_panel').classList.remove('open');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// INFO BANNER
+// ─────────────────────────────────────────────────────────────────────────────
+function updateInfoBanner(bucketId, filteredList) {
+    const banner = document.getElementById('bucket_info_banner');
+    if (!bucketId) { banner.classList.add('hidden'); banner.innerHTML = ''; return; }
+    const activePLs = filteredList.filter(p =>
+        p.bucketId === bucketId && (p.status === 'READY' || p.status === 'ASSIGNED')
+    );
+    if (activePLs.length > 1) {
+        const bucket = getBucketById(bucketId);
+        banner.innerHTML = `<div class="info-banner">
+            <i class="fas fa-box text-indigo-400 text-base flex-shrink-0"></i>
+            <span>Bucket <strong>${bucketId}</strong> has <strong>${activePLs.length} active picklists</strong>
+            ${bucket ? `· ${bucketStatusBadge(bucket.status)}` : ''}
+            — assign them together for consolidated dispatch.</span>
+        </div>`;
+        banner.classList.remove('hidden');
+    } else {
+        banner.classList.add('hidden'); banner.innerHTML = '';
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABLE RENDER
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTable() {
+    const tbody = document.getElementById('table_body');
+    const empty = document.getElementById('table_empty_state');
+    tbody.innerHTML = '';
+
+    if (!State.get_picklists.length) {
+        empty.classList.remove('hidden'); document.getElementById('ctrl_table').classList.add('hidden'); return;
+    }
+    empty.classList.add('hidden'); document.getElementById('ctrl_table').classList.remove('hidden');
+
+    const total      = State.get_picklists.length;
+    const totalPages = Math.max(1, Math.ceil(total / State.page_limit));
+    if (State.current_page > totalPages) State.current_page = totalPages;
+    const start     = (State.current_page - 1) * State.page_limit;
+    const end       = Math.min(start + State.page_limit, total);
+    const pageItems = State.get_picklists.slice(start, end);
+
+    pageItems.forEach(row => {
+        const isAssigned = row.assignedTo && row.assignedTo.userName;
+        const plAge      = getPLAgeSecs(row);
+
+        // Assign button: always active for READY status (no supervisor gate)
+        let actionHtml = '';
+        if (row.status === 'READY' && !isAssigned)
+            actionHtml = `<button class="btn-primary rounded px-3 py-1 text-xs font-bold" onclick="openModal('${row.pickListID}');event.stopPropagation()">Assign</button>`;
+        else if (isAssigned)
+            actionHtml = `<span class="text-gray-400 text-xs italic">Assigned</span>`;
+        else
+            actionHtml = `<span class="text-gray-400 text-xs italic">${row.status}</span>`;
+
+        const tr = document.createElement('tr');
+        tr.className = rowAgeClass(plAge);   // row colour coding by PL age
+        tr.innerHTML = `
+            <td class="font-semibold">${row.pickListID ?? '-'}</td>
+            <td>${row.orderID ?? '-'}</td>
+            <td class="font-mono text-xs">${row.obdId ?? '-'}</td>
+            <td>${ageBadge(plAge)}</td>
+            <td>${row.orderType || '-'}</td>
+            <td>${row.channel || '-'}</td>
+            <td>${row.customer || '-'}</td>
+            <td class="text-blue-700 font-medium">${row.customer_f_name || '<span class="text-gray-300 text-xs italic">—</span>'}</td>
+            <td>${portfolioBadge(row.customer_portfolio)}</td>
+            <td class="text-right">${row.itemQty ?? 0}</td>
+            <td class="text-xs">${formatUnixTime(row.createTime)}</td>
+            <td>${statusBadge(row.status)}</td>
+            <td class="text-center">${actionHtml}</td>
+            <td class="text-xs">${formatUnixTime(row.assignedOn)}</td>
+            <td>${row.subtype || '-'}</td>
+            <td>${getAssigneeName(row)}</td>
+            <td class="text-center">
+                <button onclick='openDrawer(${JSON.stringify(row)});event.stopPropagation()'
+                        class="text-purple-700 hover:text-purple-900 text-xs font-bold underline underline-offset-2">More</button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+function updateFooterVisibility() {
+    const footer = document.getElementById('table_footer');
+    const total  = State.get_picklists.length;
+    if (total <= 0) { footer.style.visibility = 'hidden'; return; }
+    footer.style.visibility = 'visible';
+    const totalPages = Math.max(1, Math.ceil(total / State.page_limit));
+    if (State.current_page > totalPages) State.current_page = totalPages;
+    const start = (State.current_page - 1) * State.page_limit;
+    const end   = Math.min(start + State.page_limit, total);
+    const pageSizeOptions = State.page_size_options.map(n => `<option value="${n}" ${State.page_limit===n?'selected':''}>${n}</option>`).join('');
+    footer.innerHTML = `
+        <div class="flex items-center gap-4">
+            <span>Records: ${total}</span>
+            <label class="flex items-center gap-2 text-sm">
+                <span class="text-gray-600">Page size</span>
+                <select class="border border-[var(--dhq-border)] rounded h-8 px-2 text-sm focus:outline-none"
+                        onchange="setPageSize(Number(this.value))">${pageSizeOptions}</select>
+            </label>
+        </div>
+        <div class="text-gray-500 text-xs">Showing ${start+1}–${end} of ${total} · Page ${State.current_page}/${totalPages}</div>
+        <div class="flex gap-2">
+            <button class="px-3 py-1 rounded border text-sm ${State.current_page===1?'opacity-50 cursor-not-allowed':'btn-primary'}"
+                    ${State.current_page===1?'disabled':''} onclick="prevPage()">&lt; Prev</button>
+            <button class="px-3 py-1 rounded border text-sm ${State.current_page===totalPages?'opacity-50 cursor-not-allowed':'btn-primary'}"
+                    ${State.current_page===totalPages?'disabled':''} onclick="nextPage()">Next &gt;</button>
+        </div>`;
+}
+function setPageSize(n) { if (!State.page_size_options.includes(n)) return; State.page_limit=n; State.current_page=1; renderTable(); updateFooterVisibility(); }
+function prevPage() { if (State.current_page>1) { State.current_page--; renderTable(); updateFooterVisibility(); } }
+function nextPage() { const tp=Math.max(1,Math.ceil(State.get_picklists.length/State.page_limit)); if(State.current_page<tp){ State.current_page++; renderTable(); updateFooterVisibility(); } }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FILTER
+// ─────────────────────────────────────────────────────────────────────────────
+function executeFilterWorkflow() {
+    document.getElementById('loader_filter').classList.remove('hidden');
+    State.ctrl_bucket_id  = document.getElementById('ctrl_bucket_id').value;
+    State.ctrl_channel    = document.getElementById('ctrl_channel').value;
+    State.ctrl_assignedto = document.getElementById('ctrl_assignedto').value;
+    State.ctrl_status     = document.getElementById('ctrl_status').value;
+    State.ctrl_portfolio  = document.getElementById('ctrl_portfolio').value;
+
+    setTimeout(() => {
+        const hasFilter = State.ctrl_bucket_id || State.ctrl_channel || State.ctrl_assignedto
+                       || State.ctrl_status || State.ctrl_portfolio || State.ctrl_fname_selected.length;
+        let filtered = hasFilter
+            ? State.get_temp_picklist.filter(p =>
+                (!State.ctrl_bucket_id  || p.bucketId === State.ctrl_bucket_id) &&
+                (!State.ctrl_channel    || p.channel  === State.ctrl_channel) &&
+                (!State.ctrl_assignedto || String(getAssigneeId(p)) === String(State.ctrl_assignedto)) &&
+                (!State.ctrl_status     || p.status   === State.ctrl_status) &&
+                (!State.ctrl_portfolio  || p.customer_portfolio === State.ctrl_portfolio) &&
+                (!State.ctrl_fname_selected.length || State.ctrl_fname_selected.includes(p.customer_f_name))
+              )
+            : [...State.get_temp_picklist];
+
+        applySortToList(filtered);
+        State.get_picklists = filtered;
+        State.current_page  = 1;
+        updateInfoBanner(State.ctrl_bucket_id, filtered);
+        showToast(hasFilter ? "Success" : "Alert",
+            hasFilter ? "Picklist filtered successfully." : "Filters cleared. Showing all picklists.",
+            hasFilter ? "success" : "error");
+        renderTable(); updateFooterVisibility();
+        document.getElementById('loader_filter').classList.add('hidden');
+    }, 250);
+}
+
+function resetFilters() {
+    document.getElementById('ctrl_bucket_id').value  = '';
+    document.getElementById('ctrl_channel').value    = '';
+    document.getElementById('ctrl_assignedto').value = '';
+    document.getElementById('ctrl_status').value     = '';
+    document.getElementById('ctrl_portfolio').value  = '';
+    document.getElementById('ctrl_search_id').value  = '';
+    State.ctrl_fname_selected = [];
+    document.getElementById('ms_label').textContent = 'All F-Names';
+    document.getElementById('ms_label').classList.add('text-gray-400');
+    renderMSOptions('');
+    State.get_picklists = [...State.get_temp_picklist];
+    applySortToList(State.get_picklists);
+    State.current_page = 1;
+    document.getElementById('bucket_info_banner').classList.add('hidden');
+    renderTable(); updateFooterVisibility();
+}
+
+function handleSearchEnter(event) {
+    if (event.key !== "Enter") return;
+    const q = document.getElementById('ctrl_search_id').value.trim();
+    if (!q) { showToast("Alert!", "Enter Picklist ID / Order ID / OBD ID / Bucket ID.", "error"); return; }
+    const filtered = State.get_temp_picklist.filter(p =>
+        String(p.pickListID) === q || String(p.orderID) === q ||
+        String(p.obdId)      === q || String(p.bucketId) === q
+    );
+    applySortToList(filtered);
+    State.get_picklists = filtered;
+    State.current_page  = 1;
+    renderTable(); updateFooterVisibility();
+    filtered.length
+        ? showToast("Success", "Picklist found.", "success")
+        : showToast("Alert", "No results for given ID.", "error");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL  — Assign with Bucket Sibling View + Background Filter
+// ─────────────────────────────────────────────────────────────────────────────
+function openModal(pickListID) {
+    State.ctrl_modal_picklist_id = pickListID;
+    const target = State.get_temp_picklist.find(p => p.pickListID == pickListID);
+    State.ctrl_modal_version_hash = target ? target.versionHash : null;
+    State.modal_bucket_id = target ? target.bucketId : '';
+
+    document.getElementById('ctrl_modal_picker').value = '';
+    document.getElementById('modal_version_display').textContent =
+        `versionHash captured: ${State.ctrl_modal_version_hash}`;
+
+    // ── Populate bucket dropdown in modal ──────────────────────────────────
+    const bucketSection = document.getElementById('modal_bucket_section');
+    const bucketSelect  = document.getElementById('modal_bucket_filter_select');
+
+    // All distinct bucket IDs from current picklist data
+    const allBucketIds = [...new Set(State.get_temp_picklist.map(p => p.bucketId).filter(Boolean))].sort();
+    bucketSelect.innerHTML = allBucketIds
+        .map(id => `<option value="${id}" ${id === State.modal_bucket_id ? 'selected' : ''}>${id}</option>`)
+        .join('');
+
+    // Update header context line
+    const ctxLine = document.getElementById('modal_bucket_context');
+    if (target && target.bucketId) {
+        const bucket = getBucketById(target.bucketId);
+        ctxLine.innerHTML = `📦 Assigning PL-${pickListID} · Bucket <strong>${target.bucketId}</strong> ${bucket ? '· ' + bucketStatusBadge(bucket.status) : ''}`;
+        bucketSection.classList.remove('hidden');
+    } else {
+        ctxLine.textContent = '';
+        bucketSection.classList.add('hidden');
+    }
+
+    // Render sibling list for the current bucket
+    renderModalSiblingList(State.modal_bucket_id);
+
+    document.getElementById('modal_overlay').classList.remove('hidden');
+    document.getElementById('modal_overlay').classList.add('flex');
+}
+
+// Called when bucket dropdown in modal changes
+function onModalBucketChange(bucketId) {
+    State.modal_bucket_id = bucketId;
+    const bucket = getBucketById(bucketId);
+    const ctxLine = document.getElementById('modal_bucket_context');
+    ctxLine.innerHTML = `📦 Viewing Bucket <strong>${bucketId}</strong> ${bucket ? '· ' + bucketStatusBadge(bucket.status) : ''}`;
+    renderModalSiblingList(bucketId);
+}
+
+// Renders the picklist rows inside the modal for a given bucketId
+function renderModalSiblingList(bucketId) {
+    const siblingList = document.getElementById('modal_sibling_list');
+    const siblings    = State.get_temp_picklist.filter(p => p.bucketId === bucketId);
+    const currentId   = State.ctrl_modal_picklist_id;
+
+    if (!siblings.length) {
+        siblingList.innerHTML = '<p class="text-xs text-gray-400 p-2">No picklists in this bucket.</p>';
+        return;
+    }
+
+    siblingList.innerHTML = siblings.map(pl => {
+        const isCurrent = pl.pickListID == currentId;
+        const canAssignThis = pl.status === 'READY' && !(pl.assignedTo && pl.assignedTo.userName);
+        return `<div class="sibling-pl-row ${isCurrent ? 'is-current' : ''}">
+            <div class="flex items-center gap-2 min-w-0">
+                ${isCurrent
+                    ? '<i class="fas fa-arrow-right text-purple-500 text-xs flex-shrink-0"></i>'
+                    : '<i class="fas fa-circle text-gray-200 text-xs flex-shrink-0"></i>'}
+                <span class="font-mono font-bold text-gray-700 flex-shrink-0">PL-${pl.pickListID}</span>
+                <span class="text-gray-400 flex-shrink-0">·</span>
+                <span class="text-gray-500 text-xs truncate">${pl.orderID}</span>
+            </div>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                ${statusBadge(pl.status)}
+                ${canAssignThis && !isCurrent
+                    ? `<button onclick="switchModalTarget(${pl.pickListID})"
+                              class="text-xs text-purple-600 underline hover:text-purple-800 font-semibold">Assign</button>`
+                    : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// Switch the assign modal target to a different picklist within the same bucket
+function switchModalTarget(pickListID) {
+    const target = State.get_temp_picklist.find(p => p.pickListID == pickListID);
+    State.ctrl_modal_picklist_id  = pickListID;
+    State.ctrl_modal_version_hash = target ? target.versionHash : null;
+    const ctxLine = document.getElementById('modal_bucket_context');
+    if (target) {
+        const bucket = getBucketById(target.bucketId);
+        ctxLine.innerHTML = `📦 Assigning PL-${pickListID} · Bucket <strong>${target.bucketId}</strong> ${bucket ? '· ' + bucketStatusBadge(bucket.status) : ''}`;
+    }
+    document.getElementById('modal_version_display').textContent =
+        `versionHash captured: ${State.ctrl_modal_version_hash}`;
+    renderModalSiblingList(State.modal_bucket_id);
+    showToast("Switched", `Now assigning PL-${pickListID}`, "success");
+}
+
+// "Filter Table" button inside modal — filters background table to selected bucket
+function applyBucketFilterFromModal() {
+    const selectedBucket = document.getElementById('modal_bucket_filter_select')?.value || State.modal_bucket_id;
+    if (!selectedBucket) return;
+    document.getElementById('ctrl_bucket_id').value = selectedBucket;
+    State.ctrl_bucket_id = selectedBucket;
+    const filtered = State.get_temp_picklist.filter(p => p.bucketId === selectedBucket);
+    applySortToList(filtered);
+    State.get_picklists = filtered;
+    State.current_page  = 1;
+    updateInfoBanner(selectedBucket, filtered);
+    renderTable(); updateFooterVisibility();
+    closeModal();
+    showToast("Filter Applied", `Table filtered to Bucket ${selectedBucket}.`, "success");
+}
+
+function closeModal() {
+    document.getElementById('modal_overlay').classList.add('hidden');
+    document.getElementById('modal_overlay').classList.remove('flex');
+}
+
+function executeAssignWorkflow() {
+    State.ctrl_modal_picker = document.getElementById('ctrl_modal_picker').value;
+    if (!State.ctrl_modal_picker) { showToast("Alert", "Kindly select an Assignee.", "error"); return; }
+
+    const target = State.get_temp_picklist.find(p => p.pickListID == State.ctrl_modal_picklist_id);
+
+    // OPTIMISTIC LOCK CHECK
+    if (target && target.versionHash !== State.ctrl_modal_version_hash) {
+        showToast("⚠️ Assignment Conflict",
+            "This Picklist has already been assigned by another user. Please refresh.",
+            "error");
+        return;
+    }
+    if (target && target.status !== 'READY') { showToast("Error", "Only READY picklists can be assigned.", "error"); return; }
+
+    const picker = State.get_pickers.find(p => String(p.userId) === String(State.ctrl_modal_picker));
+    const active = State.get_temp_picklist.filter(p =>
+        String(getAssigneeId(p)) === String(State.ctrl_modal_picker) &&
+        (p.status === 'ASSIGNED' || p.status === 'PICKING')
+    ).length;
+    if (active >= 3) { showToast("Error", "Picker has reached maximum active picklist limit.", "error"); return; }
+
+    [State.get_temp_picklist, State.get_picklists].forEach(list => {
+        const i = list.findIndex(p => p.pickListID == State.ctrl_modal_picklist_id);
+        if (i > -1 && picker) {
+            list[i].assignedTo  = picker;
+            list[i].status      = "ASSIGNED";
+            list[i].assignedOn  = Date.now() / 1000;
+            list[i].versionHash = (list[i].versionHash || 1) + 1;
+        }
+    });
+
+    showToast("Success", "Picklist assigned successfully.", "success");
+    closeModal(); renderTable(); updateFooterVisibility();
+}
+
+function simulateConcurrentLock() {
+    const target     = State.get_temp_picklist.find(p => p.pickListID == State.ctrl_modal_picklist_id);
+    const inPicklist = State.get_picklists.find(p => p.pickListID == State.ctrl_modal_picklist_id);
+    if (target) {
+        target.versionHash = (target.versionHash || 1) + 1;
+        if (inPicklist) inPicklist.versionHash = target.versionHash;
+        document.getElementById('modal_version_display').textContent =
+            `versionHash captured: ${State.ctrl_modal_version_hash} | current: ${target.versionHash} ← CONFLICT!`;
+        showToast("🔒 Lock Simulated", `Hash bumped to ${target.versionHash}. Click 'Update' to see the conflict.`, "warning");
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDE DRAWER — includes Bucket ID, Order Remarks, F-Name prominently
+// ─────────────────────────────────────────────────────────────────────────────
+function openDrawer(row) {
+    const body   = document.getElementById('drawer_body');
+    const bucket = getBucketById(row.bucketId);
+    const ageSecs = row.bucketId ? getBucketAgeSecs(row.bucketId) : 0;
+    const plAge   = getPLAgeSecs(row);
+
+    body.innerHTML = `
+        <!-- BUCKET INFO -->
+        <div class="mb-5 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <p class="text-xs font-extrabold text-purple-700 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <i class="fas fa-layer-group"></i> Bucket Info
+            </p>
+            <div class="grid grid-cols-2 gap-x-4">
+                ${df('Bucket ID',     `<span class="bucket-pill">${row.bucketId || '—'}</span>`)}
+                ${df('Bucket Status', bucket ? bucketStatusBadge(bucket.status) : '—')}
+                ${df('Bucket Age',    ageBadge(ageSecs))}
+                ${df('Bucket Created', bucket ? formatUnixTime(bucket.bucketCreationTime) : '—')}
+                ${df('OBD Count',     bucket ? bucket.obds.length + ' OBD(s)' : '—')}
+                ${df('Channel',       bucket ? bucket.channel : '—')}
+            </div>
+        </div>
+
+        <!-- KEY HIGHLIGHTS (Bucket ID, F-Name, Order Remarks front and centre) -->
+        <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-xs font-extrabold text-amber-700 uppercase tracking-widest mb-2 flex items-center gap-2">
+                <i class="fas fa-star"></i> Key Fields
+            </p>
+            <div class="grid grid-cols-2 gap-x-4">
+                ${df('Bucket ID',      `<span class="bucket-pill">${row.bucketId || '—'}</span>`)}
+                ${df('F-Name (Parent)', `<span class="text-blue-700 font-semibold">${row.customer_f_name || '—'}</span>`)}
+                ${df('Order Remarks',  orderRemarksBadge(row.order_identification))}
+                ${df('PL Age',         ageBadge(plAge))}
+            </div>
+        </div>
+
+        <!-- FULL DETAILS -->
+        <div class="grid grid-cols-2 gap-x-4">
+            ${df('Picklist ID',        `<span class="font-bold text-purple-700">${row.pickListID}</span>`)}
+            ${df('OBD ID',             `<span class="font-mono text-sm">${row.obdId ?? '—'}</span>`)}
+            ${df('Order ID',           row.orderID ?? '—')}
+            ${df('Status',             statusBadge(row.status))}
+            ${df('Order Type',         row.orderType  || '—')}
+            ${df('Channel',            row.channel    || '—')}
+            ${df('Sub Type',           row.subtype    || '—')}
+            ${df('Item Qty',           row.itemQty    ?? 0)}
+            ${df('Customer',           row.customer   || '—')}
+            ${df('Customer Portfolio', portfolioBadge(row.customer_portfolio))}
+            ${df('Zone IDs',           (row.zoneIds || []).join(', ') || '—')}
+            ${df('Create Time',        formatUnixTime(row.createTime))}
+            ${df('Assigned To',        getAssigneeName(row))}
+            ${df('Assigned On',        formatUnixTime(row.assignedOn))}
+            ${df('Version Hash',       `<span class="font-mono text-xs text-gray-500">${row.versionHash ?? '—'}</span>`)}
+        </div>`;
+
+    document.getElementById('side_drawer').classList.add('open');
+    document.getElementById('drawer_overlay').classList.add('open');
+}
+function df(label, val) {
+    return `<div class="drawer-field">
+        <span class="drawer-label">${label}</span>
+        <span class="drawer-value">${val}</span>
+    </div>`;
+}
+function closeDrawer() {
+    document.getElementById('side_drawer').classList.remove('open');
+    document.getElementById('drawer_overlay').classList.remove('open');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUCKET DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+let activeSummaryFilter = ''; // tracks chip click filter
+
+function renderBucketDashboard(statusOverride) {
+    const rawBuckets = MOCK_API.buckets;
+    const dateFrom   = document.getElementById('bkt_date_from')?.value;
+    const dateTo     = document.getElementById('bkt_date_to')?.value;
+    const statusSel  = statusOverride !== undefined ? statusOverride : (document.getElementById('bkt_status_filter')?.value || '');
+    const searchQ    = (document.getElementById('bkt_search')?.value || '').trim().toLowerCase();
+
+    const fromTs = dateFrom ? new Date(dateFrom).getTime() / 1000 : null;
+    const toTs   = dateTo   ? (new Date(dateTo).getTime() / 1000 + 86399) : null;
+
+    let filtered = rawBuckets.filter(b => {
+        // Date range filter on bucketCreationTime
+        if (fromTs && b.bucketCreationTime < fromTs) return false;
+        if (toTs   && b.bucketCreationTime > toTs)   return false;
+        // Status filter
+        if (statusSel && b.status !== statusSel) return false;
+        // Search: SO number, OBD ID, Picklist ID
+        if (searchQ) {
+            const matchSO  = b.obds.some(o => (o.soNumber   || '').toLowerCase().includes(searchQ));
+            const matchOBD = b.obds.some(o => String(o.obdId).includes(searchQ));
+            const matchPL  = b.obds.some(o => o.pickListIDs.some(id => String(id).includes(searchQ)));
+            if (!matchSO && !matchOBD && !matchPL) return false;
+        }
+        return true;
+    });
+
+    // Sort: oldest first
+    filtered.sort((a, b) => {
+        const ageA = NOW_TS - Math.min(...a.obds.map(o => o.oldestObdCreationTime));
+        const ageB = NOW_TS - Math.min(...b.obds.map(o => o.oldestObdCreationTime));
+        return ageB - ageA;
+    });
+
+    // Summary chips (use full rawBuckets for counts, not filtered)
+    const counts = { total: rawBuckets.length, open: 0, frozen: 0, rfc: 0, dispatched: 0 };
+    rawBuckets.forEach(b => {
+        if (b.status === 'OPEN')       counts.open++;
+        if (b.status === 'FROZEN')     counts.frozen++;
+        if (b.status === 'RFC')        counts.rfc++;
+        if (b.status === 'DISPATCHED') counts.dispatched++;
+    });
+
+    document.getElementById('bucket_summary').innerHTML = [
+        summaryChip(counts.total,      'Total',      '#730fc3', ''),
+        summaryChip(counts.open,       'Open',       '#2563eb', 'OPEN'),
+        summaryChip(counts.frozen,     'Frozen',     '#92400e', 'FROZEN'),
+        summaryChip(counts.rfc,        'RFC',        '#6d28d9', 'RFC'),
+        summaryChip(counts.dispatched, 'Dispatched', '#166534', 'DISPATCHED'),
+    ].join('');
+
+    // Highlight active chip
+    if (activeSummaryFilter) {
+        setTimeout(() => {
+            document.querySelectorAll('.summary-chip').forEach(c => c.classList.remove('active-filter'));
+            const activeChip = document.querySelector(`.summary-chip[data-status="${activeSummaryFilter}"]`);
+            if (activeChip) activeChip.classList.add('active-filter');
+        }, 0);
+    }
+
+    const cardsEl = document.getElementById('bucket_cards');
+    const emptyEl = document.getElementById('bucket_empty');
+    if (!filtered.length) {
+        cardsEl.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+    } else {
+        emptyEl.classList.add('hidden');
+        cardsEl.innerHTML = filtered.map(b => renderBucketCard(b)).join('');
+    }
+}
+
+function applyBucketFilters() {
+    activeSummaryFilter = document.getElementById('bkt_status_filter')?.value || '';
+    renderBucketDashboard();
+}
+
+function resetBucketFilters() {
+    document.getElementById('bkt_date_from').value    = '';
+    document.getElementById('bkt_date_to').value      = '';
+    document.getElementById('bkt_status_filter').value = '';
+    document.getElementById('bkt_search').value        = '';
+    activeSummaryFilter = '';
+    renderBucketDashboard();
+}
+
+function filterBucketByStatus(status) {
+    activeSummaryFilter = (activeSummaryFilter === status) ? '' : status;
+    const sel = document.getElementById('bkt_status_filter');
+    if (sel) sel.value = activeSummaryFilter;
+    renderBucketDashboard(activeSummaryFilter);
+}
+
+function summaryChip(val, label, color, status) {
+    return `<div class="summary-chip" data-status="${status}" onclick="filterBucketByStatus('${status}')">
+        <span class="summary-chip-val" style="color:${color}">${val}</span>
+        <span class="summary-chip-label" style="color:${color}">${label}</span>
+    </div>`;
+}
+
+function renderBucketCard(bucket) {
+    const allPLIds  = bucket.obds.flatMap(o => o.pickListIDs);
+    const total     = allPLIds.length;
+    const completed = allPLIds.filter(id => {
+        const pl = State.get_temp_picklist.find(p => p.pickListID == id);
+        return pl && pl.status === 'COMPLETED';
+    }).length;
+    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    const oldestTs = Math.min(...bucket.obds.map(o => o.oldestObdCreationTime));
+    const ageSecs  = NOW_TS - oldestTs;
+    const cardKey  = bucket.bucketId.replace(/[^a-z0-9]/gi, '_');
+
+    // OBD detail rows — each showing SO, OBD ID, then its Picklist IDs
+    const obdDetailHtml = bucket.obds.map(obd => {
+        const plRows = obd.pickListIDs.map(id => {
+            const pl = State.get_temp_picklist.find(p => p.pickListID == id);
+            return `<div class="pl-row">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-list-check text-gray-300 text-xs"></i>
+                    <span class="font-mono text-gray-600">PL-${id}</span>
+                </div>
+                <div>${pl ? statusBadge(pl.status) : '<span class="text-gray-300 text-xs">—</span>'}</div>
+            </div>`;
+        }).join('');
+
+        return `<div class="obd-block">
+            <div class="obd-block-header">
+                <i class="fas fa-cube text-xs"></i>
+                <span class="font-mono">OBD: ${obd.obdId}</span>
+                <span class="text-gray-400 font-normal">·</span>
+                <span class="text-purple-600 font-bold">${obd.soNumber || '—'}</span>
+            </div>
+            ${plRows}
+        </div>`;
+    }).join('');
+
+    // Progress label: shows SO numbers from OBDs
+    const soList = bucket.obds.map(o => o.soNumber).filter(Boolean).join(', ');
+
+    return `
+    <div class="bucket-card">
+        <div class="bucket-card-header">
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="bucket-pill">${bucket.bucketId}</span>
+                ${bucketStatusBadge(bucket.status)}
+                <span class="text-xs text-gray-500 font-semibold bg-white px-2 py-0.5 rounded border border-gray-200">${bucket.channel}</span>
+            </div>
+            ${ageBadge(ageSecs)}
+        </div>
+
+        <div class="bucket-card-body">
+            <!-- Customer -->
+            <p class="text-xs text-gray-500 truncate mb-2 font-medium" title="${bucket.customer}">
+                <i class="fas fa-store text-gray-300 mr-1 text-xs"></i>${bucket.customer}
+            </p>
+
+            <!-- Times -->
+            <div class="text-xs text-gray-400 mb-3">
+                <span><i class="fas fa-calendar-plus mr-1 text-gray-300"></i>Created: ${formatUnixTime(bucket.bucketCreationTime)}</span>
+            </div>
+
+            <!-- SO Numbers row -->
+            <div class="mb-3 p-2 bg-gray-50 rounded-md border border-gray-100">
+                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Sales Orders</p>
+                <p class="text-xs font-mono font-bold text-gray-700">${soList || '—'}</p>
+            </div>
+
+            <!-- Progress bar -->
+            <div>
+                <div class="flex justify-between items-center text-xs text-gray-600 mb-1">
+                    <span class="font-semibold">Pick Progress</span>
+                    <span class="text-gray-500 font-mono">${completed}/${total} PLs Completed · ${pct}%</span>
+                </div>
+                <div class="progress-bar-outer">
+                    <div class="progress-bar-fill" style="width:${pct}%"></div>
+                </div>
+                <!-- OBD + SO + PL detail summary below bar -->
+                <div class="mt-2 text-xs text-gray-400">
+                    ${bucket.obds.map(o =>
+                        `<div class="flex items-center gap-1 mb-0.5">
+                            <span class="font-mono text-gray-500">${o.soNumber}</span>
+                            <span class="text-gray-300">·</span>
+                            <span class="font-mono text-gray-400 text-xs">OBD ${o.obdId}</span>
+                            <span class="text-gray-300">·</span>
+                            <span class="text-gray-400">PL: ${o.pickListIDs.join(', ')}</span>
+                        </div>`
+                    ).join('')}
+                </div>
+            </div>
+
+            <!-- Collapsible OBD list -->
+            <div class="obd-collapse-btn" id="collapse_btn_${cardKey}" onclick="toggleOBDList('${cardKey}')">
+                <i class="fas fa-chevron-down chevron"></i>
+                <span>View ${bucket.obds.length} OBD(s) · ${total} Picklist(s)</span>
+            </div>
+            <div class="obd-list-body" id="obd_list_${cardKey}">
+                ${obdDetailHtml}
+            </div>
+        </div>
+    </div>`;
+}
+
+function toggleOBDList(cardKey) {
+    document.getElementById('collapse_btn_' + cardKey).classList.toggle('open');
+    document.getElementById('obd_list_'     + cardKey).classList.toggle('open');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPERVISOR TOGGLE
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSupervisor(checked) {
+    State.is_supervisor = checked ? "true" : "false";
+    document.getElementById('debug_role_label').innerText = `is_supervisor = ${State.is_supervisor}`;
+    renderTable();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────────────────────────────────────
+function showToast(title, message, type) {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.innerHTML = `
+        <div class="flex flex-col flex-1">
+            <span class="font-bold text-sm">${title}</span>
+            <span class="text-xs opacity-90 mt-0.5">${message}</span>
+        </div>
+        <button onclick="this.parentElement.remove()" class="font-bold text-lg leading-none focus:outline-none opacity-80 hover:opacity-100 flex-shrink-0">&times;</button>`;
+    c.appendChild(t);
+    setTimeout(() => { if (c.contains(t)) t.remove(); }, 5500);
+}
+</script>
+</body>
+</html>
